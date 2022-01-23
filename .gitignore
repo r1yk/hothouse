@@ -1,0 +1,6 @@
+env
+.env
+keys
+notes.txt
+*.csv
+__pycache__
