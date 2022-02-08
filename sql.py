@@ -8,12 +8,15 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker, Session
 
 CONFIG = dotenv_values()
-USER = CONFIG['SQL_USER']
-PASSWORD = CONFIG['SQL_PASSWORD']
+RDMS = CONFIG['RDMS']
+DB_API_DRIVER = CONFIG['DB_API_DRIVER']
 HOST = CONFIG['SQL_HOST']
 PORT = CONFIG.get('SQL_PORT', 5432)
 DATABASE = CONFIG['SQL_DATABASE']
+USER = CONFIG['SQL_USER']
+PASSWORD = CONFIG['SQL_PASSWORD']
 ENGINE = None
+
 
 def get_ssl_context(
     certfile: str = 'keys/client-cert.pem',
@@ -26,6 +29,7 @@ def get_ssl_context(
     ssl_context.load_verify_locations(cafile=cafile)
     return ssl_context
 
+
 def get_connection() -> Connection:
     """Get a DB API `Connection` using the driver of choice (`pg8000` for now)."""
     return Connection(
@@ -36,16 +40,18 @@ def get_connection() -> Connection:
         ssl_context=get_ssl_context()
     )
 
+
 def get_engine() -> Engine:
     """Get the running instance of a SQLAlchemy `Engine`."""
     if ENGINE is not None:
         return ENGINE
     return create_engine(
-        f"postgresql+pg8000://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}",
-        echo=True,
+        f"{RDMS}+{DB_API_DRIVER}://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}",
+        echo=False,
         creator=get_connection
     )
 
+
 def get_session() -> Session:
-    """Get a `session` to maintain database transactions."""
-    return sessionmaker(get_engine())
+    """Get a `Session` to maintain database transactions."""
+    return sessionmaker(get_engine())()
