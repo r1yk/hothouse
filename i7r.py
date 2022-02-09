@@ -1,7 +1,9 @@
 """I7R Table implementations"""
-from abc import abstractmethod
-from sqlalchemy import Column, Date, DateTime, Numeric, String, ForeignKey, Time, select
+from datetime import datetime
+from uuid import uuid4
+from sqlalchemy import Column, Date, DateTime, Integer, Numeric, String, ForeignKey, Time, or_, select
 from sqlalchemy.orm import declarative_base, Session
+from sql import get_session
 
 Base = declarative_base()
 # Make sure all subclasses of Base are in the `i7r` schema
@@ -15,13 +17,13 @@ class Schedule(Base):
     """
     __tablename__ = 'schedules'
     id = Column(String, primary_key=True)
-    name = Column(String)
     environment_id = Column(ForeignKey('i7r.environments.id'))
-    start_at = Column(Time)
-    end_at = Column(Time)
-    start_date = Column(Date)
     end_date = Column(Date)
-    light_level = Column(Numeric)
+    fan_on_seconds = Column(Integer)
+    fan_off_seconds = Column(Integer)
+    start_date = Column(Date)
+    light_on_at = Column(Time)
+    light_off_at = Column(Time)
     temp = Column(Numeric)
     humidity = Column(Numeric)
 
@@ -36,13 +38,10 @@ class Reading(Base):
     environment_id = Column(ForeignKey('i7r.environments.id'))
     at = Column(DateTime)
     fan_id = Column(ForeignKey('i7r.fans.id'))
-    fan_level = Column(Numeric)
     heater_id = Column(ForeignKey('i7r.heaters.id'))
-    heater_level = Column(Numeric)
     humidifier_id = Column(ForeignKey('i7r.humidifiers.id'))
     humidity = Column(Numeric)
     light_id = Column(ForeignKey('i7r.lights.id'))
-    light_level = Column(Numeric)
     temp = Column(Numeric)
 
 
@@ -53,11 +52,9 @@ class Fan(Base):
     id = Column(String, primary_key=True)
     name = Column(String)
 
-    @abstractmethod
     def fan_on(self, level: float = 1) -> None:
         """Send a signal for the fan to engage."""
 
-    @abstractmethod
     def fan_off(self) -> None:
         """Send a signal for the fan to disengage."""
 
@@ -69,11 +66,9 @@ class Humidifier(Base):
     id = Column(String, primary_key=True)
     name = Column(String)
 
-    @abstractmethod
     def humidity_on(self, level: float = 1) -> None:
         """Send a signal for the humidifier to engage."""
 
-    @abstractmethod
     def humidity_off(self) -> None:
         """Send a signal for the humidifier to disengage."""
 
@@ -85,11 +80,9 @@ class Heater(Base):
     id = Column(String, primary_key=True)
     name = Column(String)
 
-    @abstractmethod
     def heat_on(self, level: float = 1) -> None:
         """Send a signal for the heater to engage."""
 
-    @abstractmethod
     def heat_off(self) -> None:
         """Send a signal for the heater to disengage."""
 
@@ -101,11 +94,9 @@ class Light(Base):
     id = Column(String, primary_key=True)
     name = Column(String)
 
-    @abstractmethod
     def light_on(self, level: float = 1) -> None:
         """Send a signal for the light to engage."""
 
-    @abstractmethod
     def light_off(self) -> None:
         """Send a signal for the light to disengage."""
 
@@ -127,6 +118,7 @@ class Environment(Base):
     humidifier_id = Column(ForeignKey('i7r.humidifiers.id'))
     light_id = Column(ForeignKey('i7r.lights.id'))
     humidity_default = Column(Numeric)
+    humidity_tolerance = Column(Numeric)
     temp_default = Column(Numeric)
     temp_tolerance = Column(Numeric)
 
@@ -135,11 +127,9 @@ class Environment(Base):
     humidifier_class = Humidifier
     light_class = Light
 
-    @abstractmethod
     def get_temp(self) -> float:
         """Get the current temperature in this environment."""
 
-    @abstractmethod
     def get_humidity(self) -> float:
         """Get the current humidity in this environment."""
 
@@ -161,3 +151,61 @@ class Environment(Base):
         - Dispatch any events to controllers whose status should change
           based on the schedule and conditions.
         """
+        now = datetime.now()
+        humidity = self.get_humidity()
+        temp = self.get_temp()
+        print(f'{temp}, {humidity}')
+        with get_session() as session:
+            reading = Reading(
+                id=str(uuid4()),
+                at=now,
+                environment_id=self.id,
+                heater_id=self.heater_id,
+                light_id=self.light_id,
+                humidifier_id=self.humidifier_id,
+                humidity=humidity,
+                temp=temp
+            )
+
+            session.add(reading)
+
+            schedule_query = select(Schedule).where(
+                Schedule.environment_id == self.id,
+                Schedule.start_date < now,
+                or_(Schedule.end_date == None, Schedule.end_date > now)
+            )
+
+            schedule = session.execute(schedule_query).scalars().first()
+
+            # Temp control
+            temp_target = float(schedule.temp or self.temp_default or 70)
+            temp_tolerance = float(self.temp_tolerance or 3)
+            print('temp', temp_target, temp_tolerance)
+            if temp_target - temp_tolerance > temp:
+                """Heat on"""
+                print('heat on!')
+
+            elif temp - temp_tolerance > temp_target:
+                print('heat off!')
+
+            # Humidity control
+            humidity_target = float(
+                schedule.humidity or self.humidity_default or 0.5)
+            humidity_tolerance = float(self.humidity_tolerance or 0.1)
+            print('humidity', humidity_target, humidity_tolerance)
+
+            if humidity_target - humidity_tolerance > humidity:
+                """Humidity on"""
+                print('humidity on!')
+
+            elif humidity - humidity_tolerance > humidity_target:
+                """Humidity off"""
+                print('humidity off!')
+
+            # Fan control
+            if schedule.fan_on_seconds and schedule.fan_off_seconds:
+                this_second = (now.hour * 60 * 60) + \
+                    (now.minute * 60) + now.second
+                fan_total_period = schedule.fan_on_seconds + schedule.fan_off_seconds
+                if this_second % fan_total_period < schedule.fan_on_seconds:
+                    """Fan on"""
