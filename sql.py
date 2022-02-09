@@ -15,7 +15,10 @@ PORT = CONFIG.get('SQL_PORT', 5432)
 DATABASE = CONFIG['SQL_DATABASE']
 USER = CONFIG['SQL_USER']
 PASSWORD = CONFIG['SQL_PASSWORD']
-ENGINE = None
+
+# Globals for managing DB connections
+engine = None
+session_factory = None
 
 
 def get_ssl_context(
@@ -43,15 +46,21 @@ def get_connection() -> Connection:
 
 def get_engine() -> Engine:
     """Get the running instance of a SQLAlchemy `Engine`."""
-    if ENGINE is not None:
-        return ENGINE
-    return create_engine(
-        f"{RDMS}+{DB_API_DRIVER}://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}",
-        echo=False,
-        creator=get_connection
-    )
+    global engine
+    if engine is None:
+        engine = create_engine(
+            f"{RDMS}+{DB_API_DRIVER}://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}",
+            echo=True,
+            creator=get_connection
+        )
+
+    return engine
 
 
 def get_session() -> Session:
     """Get a `Session` to maintain database transactions."""
-    return sessionmaker(get_engine())()
+    global session_factory
+    if session_factory is None:
+        session_factory = sessionmaker(get_engine())
+
+    return session_factory()
