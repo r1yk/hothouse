@@ -1,7 +1,7 @@
 """I7R Table implementations"""
 from datetime import datetime
 from uuid import uuid4
-from sqlalchemy import Column, Date, DateTime, Integer, Numeric, String, ForeignKey, Time, or_, select
+from sqlalchemy import Boolean, Column, Date, DateTime, Integer, Numeric, String, ForeignKey, Time, or_, select
 from sqlalchemy.orm import declarative_base, Session
 from sql import get_session
 
@@ -38,10 +38,14 @@ class Reading(Base):
     environment_id = Column(ForeignKey('i7r.environments.id'))
     at = Column(DateTime)
     fan_id = Column(ForeignKey('i7r.fans.id'))
+    fan_active = Column(Boolean)
     heater_id = Column(ForeignKey('i7r.heaters.id'))
+    heater_active = Column(Boolean)
     humidifier_id = Column(ForeignKey('i7r.humidifiers.id'))
+    humidifier_active = Column(Boolean)
     humidity = Column(Numeric)
     light_id = Column(ForeignKey('i7r.lights.id'))
+    light_active = Column(Boolean)
     temp = Column(Numeric)
 
 
@@ -51,6 +55,7 @@ class Fan(Base):
 
     id = Column(String, primary_key=True)
     name = Column(String)
+    active = Column(Boolean)
 
     def fan_on(self, level: float = 1) -> None:
         """Send a signal for the fan to engage."""
@@ -65,6 +70,7 @@ class Humidifier(Base):
 
     id = Column(String, primary_key=True)
     name = Column(String)
+    active = Column(Boolean)
 
     def humidity_on(self, level: float = 1) -> None:
         """Send a signal for the humidifier to engage."""
@@ -79,6 +85,7 @@ class Heater(Base):
 
     id = Column(String, primary_key=True)
     name = Column(String)
+    active = Column(Boolean)
 
     def heat_on(self, level: float = 1) -> None:
         """Send a signal for the heater to engage."""
@@ -93,6 +100,7 @@ class Light(Base):
 
     id = Column(String, primary_key=True)
     name = Column(String)
+    active = Column(Boolean)
 
     def light_on(self, level: float = 1) -> None:
         """Send a signal for the light to engage."""
@@ -122,6 +130,7 @@ class Environment(Base):
     temp_default = Column(Numeric)
     temp_tolerance = Column(Numeric)
 
+    # Override these static attributes for subclasses of `Environment`
     fan_class = Fan
     heater_class = Heater
     humidifier_class = Humidifier
@@ -133,18 +142,6 @@ class Environment(Base):
     def get_humidity(self) -> float:
         """Get the current humidity in this environment."""
 
-    def get_device(self, session: Session, device_type: str, device_id: str) -> Base:
-        """Return the device of this type with this ID."""
-        id_field = f'{device_type}_id'
-        if not getattr(self, id_field, None):
-            return None
-
-        device_class = getattr(self, f'{device_type}_class')
-        statement = select(device_class).where(
-            device_class.id == device_id).limit(1)
-
-        return session.execute(statement).scalars().one()
-
     def take_reading(self) -> None:
         """
         - Record the current environment conditions to the database.
@@ -154,20 +151,11 @@ class Environment(Base):
         now = datetime.now()
         humidity = self.get_humidity()
         temp = self.get_temp()
-        print(f'{temp}, {humidity}')
         with get_session() as session:
-            reading = Reading(
-                id=str(uuid4()),
-                at=now,
-                environment_id=self.id,
-                heater_id=self.heater_id,
-                light_id=self.light_id,
-                humidifier_id=self.humidifier_id,
-                humidity=humidity,
-                temp=temp
-            )
-
-            session.add(reading)
+            fan = session.get(self.fan_class, self.fan_id)
+            heater = session.get(self.heater_class, self.heater_id)
+            humidifier = session.get(self.humidifier_class, self.humidifier_id)
+            light = session.get(self.light_class, self.light_id)
 
             schedule_query = select(Schedule).where(
                 Schedule.environment_id == self.id,
@@ -178,34 +166,77 @@ class Environment(Base):
             schedule = session.execute(schedule_query).scalars().first()
 
             # Temp control
-            temp_target = float(schedule.temp or self.temp_default or 70)
-            temp_tolerance = float(self.temp_tolerance or 3)
-            print('temp', temp_target, temp_tolerance)
-            if temp_target - temp_tolerance > temp:
-                """Heat on"""
-                print('heat on!')
+            if heater is not None:
+                temp_target = float(schedule.temp or self.temp_default or 70)
+                temp_tolerance = float(self.temp_tolerance or 3)
+                if not heater.active and (temp_target - temp_tolerance > temp):
+                    """Heat on"""
+                    heater.active = True
+                    heater.heat_on()
 
-            elif temp - temp_tolerance > temp_target:
-                print('heat off!')
+                elif heater.active and (temp - temp_tolerance > temp_target):
+                    """Heat off"""
+                    heater.active = False
+                    heater.heat_off()
 
             # Humidity control
-            humidity_target = float(
-                schedule.humidity or self.humidity_default or 0.5)
-            humidity_tolerance = float(self.humidity_tolerance or 0.1)
-            print('humidity', humidity_target, humidity_tolerance)
+            if humidifier is not None:
+                humidity_target = float(
+                    schedule.humidity or self.humidity_default or 0.5)
+                humidity_tolerance = float(self.humidity_tolerance or 0.1)
 
-            if humidity_target - humidity_tolerance > humidity:
-                """Humidity on"""
-                print('humidity on!')
+                if not humidifier.active and (humidity_target - humidity_tolerance > humidity):
+                    """Humidity on"""
+                    humidifier.active = True
+                    humidifier.humidity_on()
 
-            elif humidity - humidity_tolerance > humidity_target:
-                """Humidity off"""
-                print('humidity off!')
+                elif humidifier.active and (humidity - humidity_tolerance > humidity_target):
+                    """Humidity off"""
+                    humidifier.active = False
+                    humidifier.humidity_off()
 
             # Fan control
-            if schedule.fan_on_seconds and schedule.fan_off_seconds:
-                this_second = (now.hour * 60 * 60) + \
-                    (now.minute * 60) + now.second
-                fan_total_period = schedule.fan_on_seconds + schedule.fan_off_seconds
-                if this_second % fan_total_period < schedule.fan_on_seconds:
-                    """Fan on"""
+            if fan is not None:
+                if schedule.fan_on_seconds and schedule.fan_off_seconds:
+                    this_second = (now.hour * 60 * 60) + \
+                        (now.minute * 60) + now.second
+                    fan_total_period = schedule.fan_on_seconds + schedule.fan_off_seconds
+                    during_fan_on = this_second % fan_total_period < schedule.fan_on_seconds
+                    if not fan.active and during_fan_on:
+                        fan.active = True
+                        fan.fan_on()
+
+                    elif fan.active and not during_fan_on:
+                        fan.active = False
+                        fan.fan_off()
+
+            # Light control
+            if light is not None and schedule.light_on_at and schedule.light_off_at:
+                now_time = now.time()
+                during_light_on = now_time > schedule.light_on_at and now_time < schedule.light_off_at
+                if not light.active and during_light_on:
+                    light.active = True
+                    light.light_on()
+
+                elif light.active and not during_light_on:
+                    light.active = False
+                    light.light_off()
+
+            reading = Reading(
+                id=str(uuid4()),
+                at=now,
+                environment_id=self.id,
+                fan_id=self.fan_id,
+                fan_active=fan and fan.active or False,
+                heater_id=self.heater_id,
+                heater_active=heater and heater.active or False,
+                light_id=self.light_id,
+                light_active=light and light.active or False,
+                humidifier_id=self.humidifier_id,
+                humidifier_active=humidifier and humidifier.active or False,
+                humidity=humidity,
+                temp=temp
+            )
+
+            session.add(reading)
+            session.commit()
