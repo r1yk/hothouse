@@ -1,6 +1,6 @@
 import unittest
 from i7r import Environment
-from sql import get_session
+from postgres_connector import get_session
 
 
 class TestI7R(unittest.TestCase):

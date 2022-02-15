@@ -29,9 +29,9 @@ CREATE TABLE i7r.fans (
 CREATE TABLE i7r.environments (
     id char(36) PRIMARY KEY,
     created_at timestamp,
-    fan_id char(36) REFERENCES i7r.fans,
-    heater_id char(36) REFERENCES i7r.heaters,
-    humidifier_id char(36) REFERENCES i7r.humidifiers,
+    fan_id char(36) REFERENCES i7r.fans ON DELETE SET NULL,
+    heater_id char(36) REFERENCES i7r.heaters ON DELETE SET NULL,
+    humidifier_id char(36) REFERENCES i7r.humidifiers ON DELETE SET NULL,
     humidity_default NUMERIC,
     humidity_tolerance NUMERIC,
     light_id char(36) REFERENCES i7r.lights ON DELETE SET NULL,

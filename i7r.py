@@ -3,7 +3,7 @@ from datetime import datetime
 from uuid import uuid4
 from sqlalchemy import Boolean, Column, Date, DateTime, Integer, Numeric, String, ForeignKey, Time, or_, select
 from sqlalchemy.orm import declarative_base, Session
-from sql import get_session
+from postgres_connector import get_session
 
 Base = declarative_base()
 # Make sure all subclasses of Base are in the `i7r` schema

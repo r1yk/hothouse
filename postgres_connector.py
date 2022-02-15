@@ -8,13 +8,11 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker, Session
 
 CONFIG = dotenv_values()
-RDMS = CONFIG['RDMS']
-DB_API_DRIVER = CONFIG['DB_API_DRIVER']
-HOST = CONFIG['SQL_HOST']
-PORT = CONFIG.get('SQL_PORT', 5432)
-DATABASE = CONFIG['SQL_DATABASE']
-USER = CONFIG['SQL_USER']
-PASSWORD = CONFIG['SQL_PASSWORD']
+HOST = CONFIG['PG_HOST']
+PORT = CONFIG.get('PG_PORT', 5432)
+DATABASE = CONFIG['DB_NAME']
+USER = CONFIG['PG_USERNAME']
+PASSWORD = CONFIG['PG_PASSWORD']
 
 # Globals for managing DB connections
 engine = None
@@ -49,7 +47,7 @@ def get_engine() -> Engine:
     global engine
     if engine is None:
         engine = create_engine(
-            f"{RDMS}+{DB_API_DRIVER}://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}",
+            f"postgresql+pg8000://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}",
             echo=True,
             creator=get_connection
         )
