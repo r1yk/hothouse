@@ -3,7 +3,7 @@ CREATE SCHEMA i7r
 CREATE TABLE i7r.devices (
     active boolean,
     voltage NUMERIC,
-    watts int,
+    watts int
 );
 
 CREATE TABLE i7r.humidifiers (
@@ -34,7 +34,7 @@ CREATE TABLE i7r.environments (
     humidifier_id char(36) REFERENCES i7r.humidifiers,
     humidity_default NUMERIC,
     humidity_tolerance NUMERIC,
-    light_id char(36) REFERENCES i7r.lights,
+    light_id char(36) REFERENCES i7r.lights ON DELETE SET NULL,
     name varchar(80) NOT NULL,
     temp_default NUMERIC,
     temp_tolerance NUMERIC
