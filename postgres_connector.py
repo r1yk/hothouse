@@ -42,23 +42,21 @@ def get_connection() -> Connection:
     )
 
 
-def get_engine() -> Engine:
+def get_engine(db_name: str) -> Engine:
     """Get the running instance of a SQLAlchemy `Engine`."""
     global engine
     if engine is None:
         engine = create_engine(
-            f"postgresql+pg8000://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}",
-            echo=True,
-            creator=get_connection
-        )
+            f"postgresql+pg8000://{USER}:{PASSWORD}@{HOST}:{PORT}/{db_name}",
+            echo=True)
 
     return engine
 
 
-def get_session() -> Session:
+def get_session(db_name: str = DATABASE) -> Session:
     """Get a `Session` to maintain database transactions."""
     global session_factory
     if session_factory is None:
-        session_factory = sessionmaker(get_engine())
+        session_factory = sessionmaker(get_engine(db_name))
 
     return session_factory()
