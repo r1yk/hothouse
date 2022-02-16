@@ -50,7 +50,10 @@ SET default_table_access_method = heap;
 CREATE TABLE i7r.devices (
     active boolean,
     voltage numeric,
-    watts integer
+    watts integer,
+    id character(36) NOT NULL,
+    name character varying(80) NOT NULL,
+    device_type character varying(36)
 );
 
 
@@ -76,58 +79,6 @@ CREATE TABLE i7r.environments (
 
 
 ALTER TABLE i7r.environments OWNER TO postgres;
-
---
--- Name: fans; Type: TABLE; Schema: i7r; Owner: postgres
---
-
-CREATE TABLE i7r.fans (
-    id character(36) NOT NULL,
-    name character varying(80) NOT NULL
-)
-INHERITS (i7r.devices);
-
-
-ALTER TABLE i7r.fans OWNER TO postgres;
-
---
--- Name: heaters; Type: TABLE; Schema: i7r; Owner: postgres
---
-
-CREATE TABLE i7r.heaters (
-    id character(36) NOT NULL,
-    name character varying(80) NOT NULL
-)
-INHERITS (i7r.devices);
-
-
-ALTER TABLE i7r.heaters OWNER TO postgres;
-
---
--- Name: humidifiers; Type: TABLE; Schema: i7r; Owner: postgres
---
-
-CREATE TABLE i7r.humidifiers (
-    id character(36) NOT NULL,
-    name character varying(80) NOT NULL
-)
-INHERITS (i7r.devices);
-
-
-ALTER TABLE i7r.humidifiers OWNER TO postgres;
-
---
--- Name: lights; Type: TABLE; Schema: i7r; Owner: postgres
---
-
-CREATE TABLE i7r.lights (
-    id character(36) NOT NULL,
-    name character varying(80) NOT NULL
-)
-INHERITS (i7r.devices);
-
-
-ALTER TABLE i7r.lights OWNER TO postgres;
 
 --
 -- Name: readings; Type: TABLE; Schema: i7r; Owner: postgres
@@ -173,43 +124,19 @@ CREATE TABLE i7r.schedules (
 ALTER TABLE i7r.schedules OWNER TO postgres;
 
 --
+-- Name: devices devices_pkey; Type: CONSTRAINT; Schema: i7r; Owner: postgres
+--
+
+ALTER TABLE ONLY i7r.devices
+    ADD CONSTRAINT devices_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: environments environments_pkey; Type: CONSTRAINT; Schema: i7r; Owner: postgres
 --
 
 ALTER TABLE ONLY i7r.environments
     ADD CONSTRAINT environments_pkey PRIMARY KEY (id);
-
-
---
--- Name: fans fans_pkey; Type: CONSTRAINT; Schema: i7r; Owner: postgres
---
-
-ALTER TABLE ONLY i7r.fans
-    ADD CONSTRAINT fans_pkey PRIMARY KEY (id);
-
-
---
--- Name: heaters heaters_pkey; Type: CONSTRAINT; Schema: i7r; Owner: postgres
---
-
-ALTER TABLE ONLY i7r.heaters
-    ADD CONSTRAINT heaters_pkey PRIMARY KEY (id);
-
-
---
--- Name: humidifiers humidifiers_pkey; Type: CONSTRAINT; Schema: i7r; Owner: postgres
---
-
-ALTER TABLE ONLY i7r.humidifiers
-    ADD CONSTRAINT humidifiers_pkey PRIMARY KEY (id);
-
-
---
--- Name: lights lights_pkey; Type: CONSTRAINT; Schema: i7r; Owner: postgres
---
-
-ALTER TABLE ONLY i7r.lights
-    ADD CONSTRAINT lights_pkey PRIMARY KEY (id);
 
 
 --
@@ -233,7 +160,7 @@ ALTER TABLE ONLY i7r.schedules
 --
 
 ALTER TABLE ONLY i7r.environments
-    ADD CONSTRAINT environments_fan_id_fkey FOREIGN KEY (fan_id) REFERENCES i7r.fans(id);
+    ADD CONSTRAINT environments_fan_id_fkey FOREIGN KEY (fan_id) REFERENCES i7r.devices(id);
 
 
 --
@@ -241,7 +168,7 @@ ALTER TABLE ONLY i7r.environments
 --
 
 ALTER TABLE ONLY i7r.environments
-    ADD CONSTRAINT environments_heater_id_fkey FOREIGN KEY (heater_id) REFERENCES i7r.heaters(id);
+    ADD CONSTRAINT environments_heater_id_fkey FOREIGN KEY (heater_id) REFERENCES i7r.devices(id);
 
 
 --
@@ -249,7 +176,7 @@ ALTER TABLE ONLY i7r.environments
 --
 
 ALTER TABLE ONLY i7r.environments
-    ADD CONSTRAINT environments_humidifier_id_fkey FOREIGN KEY (humidifier_id) REFERENCES i7r.humidifiers(id);
+    ADD CONSTRAINT environments_humidifier_id_fkey FOREIGN KEY (humidifier_id) REFERENCES i7r.devices(id);
 
 
 --
@@ -257,7 +184,7 @@ ALTER TABLE ONLY i7r.environments
 --
 
 ALTER TABLE ONLY i7r.environments
-    ADD CONSTRAINT environments_light_id_fkey FOREIGN KEY (light_id) REFERENCES i7r.lights(id) ON DELETE SET NULL;
+    ADD CONSTRAINT environments_light_id_fkey FOREIGN KEY (light_id) REFERENCES i7r.devices(id);
 
 
 --
@@ -273,7 +200,7 @@ ALTER TABLE ONLY i7r.readings
 --
 
 ALTER TABLE ONLY i7r.readings
-    ADD CONSTRAINT readings_fan_id_fkey FOREIGN KEY (fan_id) REFERENCES i7r.fans(id);
+    ADD CONSTRAINT readings_fan_id_fkey FOREIGN KEY (fan_id) REFERENCES i7r.devices(id);
 
 
 --
@@ -281,7 +208,7 @@ ALTER TABLE ONLY i7r.readings
 --
 
 ALTER TABLE ONLY i7r.readings
-    ADD CONSTRAINT readings_heater_id_fkey FOREIGN KEY (heater_id) REFERENCES i7r.heaters(id);
+    ADD CONSTRAINT readings_heater_id_fkey FOREIGN KEY (heater_id) REFERENCES i7r.devices(id);
 
 
 --
@@ -289,7 +216,7 @@ ALTER TABLE ONLY i7r.readings
 --
 
 ALTER TABLE ONLY i7r.readings
-    ADD CONSTRAINT readings_humidifier_id_fkey FOREIGN KEY (humidifier_id) REFERENCES i7r.humidifiers(id);
+    ADD CONSTRAINT readings_humidifier_id_fkey FOREIGN KEY (humidifier_id) REFERENCES i7r.devices(id);
 
 
 --
@@ -297,7 +224,7 @@ ALTER TABLE ONLY i7r.readings
 --
 
 ALTER TABLE ONLY i7r.readings
-    ADD CONSTRAINT readings_light_id_fkey FOREIGN KEY (light_id) REFERENCES i7r.lights(id);
+    ADD CONSTRAINT readings_light_id_fkey FOREIGN KEY (light_id) REFERENCES i7r.devices(id);
 
 
 --
