@@ -6,13 +6,13 @@ from uuid import uuid4
 from sqlalchemy import select
 from postgres_connector import CONFIG, get_session, get_engine
 from scripts.import_db_schema import import_schema
-from i7r import Device, Environment, Schedule
+from hothouse import Device, Environment, Schedule
 
 
-test_db_name = 'i7r_test_db'
+test_db_name = 'hothouse_test_db'
 
 
-class TestI7R(unittest.TestCase):
+class TestHothouse(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         try:
@@ -77,7 +77,7 @@ class TestI7R(unittest.TestCase):
 
         except Exception as e:
             """Always run the teardown so a test DB isn't left behind as an artifact"""
-            TestI7R.tearDownClass()
+            TestHothouse.tearDownClass()
             raise e
 
     @classmethod

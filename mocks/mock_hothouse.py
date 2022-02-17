@@ -1,8 +1,8 @@
-"""Mock implemntations of i7r + devices"""
+"""Mock implementations of hothouse environment + devices"""
 
 from datetime import datetime
 import math
-from i7r import Environment, Fan, Heater, Humidifier, Light
+from hothouse import Environment, Fan, Heater, Humidifier, Light
 
 
 class MockFan(Fan):

@@ -1,4 +1,4 @@
-"""I7R Table implementations"""
+"""Hothouse Table implementations"""
 from datetime import datetime
 from uuid import uuid4
 from sqlalchemy import Boolean, Column, Date, DateTime, Integer, Numeric, String, ForeignKey, Time, or_, select
@@ -6,8 +6,8 @@ from sqlalchemy.orm import declarative_base, Session
 from postgres_connector import get_session
 
 Base = declarative_base()
-# Make sure all subclasses of Base are in the `i7r` schema
-setattr(Base, '__table_args__', {'schema': 'i7r'})
+# Make sure all subclasses of Base are in the `hothouse` schema
+setattr(Base, '__table_args__', {'schema': 'hh'})
 
 
 class Schedule(Base):
@@ -17,7 +17,7 @@ class Schedule(Base):
     """
     __tablename__ = 'schedules'
     id = Column(String, primary_key=True)
-    environment_id = Column(ForeignKey('i7r.devices.id'))
+    environment_id = Column(ForeignKey('hh.devices.id'))
     end_date = Column(Date)
     fan_on_seconds = Column(Integer)
     fan_off_seconds = Column(Integer)
@@ -35,16 +35,16 @@ class Reading(Base):
     __tablename__ = 'readings'
 
     id = Column(String, primary_key=True)
-    environment_id = Column(ForeignKey('i7r.devices.id'))
+    environment_id = Column(ForeignKey('hh.devices.id'))
     at = Column(DateTime)
-    fan_id = Column(ForeignKey('i7r.devices.id'))
+    fan_id = Column(ForeignKey('hh.devices.id'))
     fan_active = Column(Boolean)
-    heater_id = Column(ForeignKey('i7r.devices.id'))
+    heater_id = Column(ForeignKey('hh.devices.id'))
     heater_active = Column(Boolean)
-    humidifier_id = Column(ForeignKey('i7r.devices.id'))
+    humidifier_id = Column(ForeignKey('hh.devices.id'))
     humidifier_active = Column(Boolean)
     humidity = Column(Numeric)
-    light_id = Column(ForeignKey('i7r.devices.id'))
+    light_id = Column(ForeignKey('hh.devices.id'))
     light_active = Column(Boolean)
     temp = Column(Numeric)
 
@@ -76,10 +76,10 @@ class Environment(Base):
     id = Column(String, primary_key=True)
     created_at = Column(DateTime)
     name = Column(String)
-    fan_id = Column(ForeignKey('i7r.devices.id'))
-    heater_id = Column(ForeignKey('i7r.devices.id'))
-    humidifier_id = Column(ForeignKey('i7r.devices.id'))
-    light_id = Column(ForeignKey('i7r.devices.id'))
+    fan_id = Column(ForeignKey('hh.devices.id'))
+    heater_id = Column(ForeignKey('hh.devices.id'))
+    humidifier_id = Column(ForeignKey('hh.devices.id'))
+    light_id = Column(ForeignKey('hh.devices.id'))
     humidity_default = Column(Numeric)
     humidity_tolerance = Column(Numeric)
     temp_default = Column(Numeric)

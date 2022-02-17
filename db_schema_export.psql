@@ -17,13 +17,13 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- Name: i7r; Type: SCHEMA; Schema: -; Owner: postgres
+-- Name: hh; Type: SCHEMA; Schema: -; Owner: postgres
 --
 
-CREATE SCHEMA i7r;
+CREATE SCHEMA hh;
 
 
-ALTER SCHEMA i7r OWNER TO postgres;
+ALTER SCHEMA hh OWNER TO postgres;
 
 --
 -- Name: pgcrypto; Type: EXTENSION; Schema: -; Owner: -
@@ -44,10 +44,10 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- Name: devices; Type: TABLE; Schema: i7r; Owner: postgres
+-- Name: devices; Type: TABLE; Schema: hh; Owner: postgres
 --
 
-CREATE TABLE i7r.devices (
+CREATE TABLE hh.devices (
     active boolean,
     voltage numeric,
     watts integer,
@@ -57,13 +57,13 @@ CREATE TABLE i7r.devices (
 );
 
 
-ALTER TABLE i7r.devices OWNER TO postgres;
+ALTER TABLE hh.devices OWNER TO postgres;
 
 --
--- Name: environments; Type: TABLE; Schema: i7r; Owner: postgres
+-- Name: environments; Type: TABLE; Schema: hh; Owner: postgres
 --
 
-CREATE TABLE i7r.environments (
+CREATE TABLE hh.environments (
     id character(36) NOT NULL,
     created_at timestamp without time zone,
     fan_id character(36),
@@ -78,13 +78,13 @@ CREATE TABLE i7r.environments (
 );
 
 
-ALTER TABLE i7r.environments OWNER TO postgres;
+ALTER TABLE hh.environments OWNER TO postgres;
 
 --
--- Name: readings; Type: TABLE; Schema: i7r; Owner: postgres
+-- Name: readings; Type: TABLE; Schema: hh; Owner: postgres
 --
 
-CREATE TABLE i7r.readings (
+CREATE TABLE hh.readings (
     id character(36) NOT NULL,
     at timestamp without time zone NOT NULL,
     environment_id character(36),
@@ -101,13 +101,13 @@ CREATE TABLE i7r.readings (
 );
 
 
-ALTER TABLE i7r.readings OWNER TO postgres;
+ALTER TABLE hh.readings OWNER TO postgres;
 
 --
--- Name: schedules; Type: TABLE; Schema: i7r; Owner: postgres
+-- Name: schedules; Type: TABLE; Schema: hh; Owner: postgres
 --
 
-CREATE TABLE i7r.schedules (
+CREATE TABLE hh.schedules (
     id character(36) NOT NULL,
     environment_id character(36),
     end_date date,
@@ -121,118 +121,118 @@ CREATE TABLE i7r.schedules (
 );
 
 
-ALTER TABLE i7r.schedules OWNER TO postgres;
+ALTER TABLE hh.schedules OWNER TO postgres;
 
 --
--- Name: devices devices_pkey; Type: CONSTRAINT; Schema: i7r; Owner: postgres
+-- Name: devices devices_pkey; Type: CONSTRAINT; Schema: hh; Owner: postgres
 --
 
-ALTER TABLE ONLY i7r.devices
+ALTER TABLE ONLY hh.devices
     ADD CONSTRAINT devices_pkey PRIMARY KEY (id);
 
 
 --
--- Name: environments environments_pkey; Type: CONSTRAINT; Schema: i7r; Owner: postgres
+-- Name: environments environments_pkey; Type: CONSTRAINT; Schema: hh; Owner: postgres
 --
 
-ALTER TABLE ONLY i7r.environments
+ALTER TABLE ONLY hh.environments
     ADD CONSTRAINT environments_pkey PRIMARY KEY (id);
 
 
 --
--- Name: readings readings_pkey; Type: CONSTRAINT; Schema: i7r; Owner: postgres
+-- Name: readings readings_pkey; Type: CONSTRAINT; Schema: hh; Owner: postgres
 --
 
-ALTER TABLE ONLY i7r.readings
+ALTER TABLE ONLY hh.readings
     ADD CONSTRAINT readings_pkey PRIMARY KEY (id);
 
 
 --
--- Name: schedules schedules_pkey; Type: CONSTRAINT; Schema: i7r; Owner: postgres
+-- Name: schedules schedules_pkey; Type: CONSTRAINT; Schema: hh; Owner: postgres
 --
 
-ALTER TABLE ONLY i7r.schedules
+ALTER TABLE ONLY hh.schedules
     ADD CONSTRAINT schedules_pkey PRIMARY KEY (id);
 
 
 --
--- Name: environments environments_fan_id_fkey; Type: FK CONSTRAINT; Schema: i7r; Owner: postgres
+-- Name: environments environments_fan_id_fkey; Type: FK CONSTRAINT; Schema: hh; Owner: postgres
 --
 
-ALTER TABLE ONLY i7r.environments
-    ADD CONSTRAINT environments_fan_id_fkey FOREIGN KEY (fan_id) REFERENCES i7r.devices(id);
-
-
---
--- Name: environments environments_heater_id_fkey; Type: FK CONSTRAINT; Schema: i7r; Owner: postgres
---
-
-ALTER TABLE ONLY i7r.environments
-    ADD CONSTRAINT environments_heater_id_fkey FOREIGN KEY (heater_id) REFERENCES i7r.devices(id);
+ALTER TABLE ONLY hh.environments
+    ADD CONSTRAINT environments_fan_id_fkey FOREIGN KEY (fan_id) REFERENCES hh.devices(id);
 
 
 --
--- Name: environments environments_humidifier_id_fkey; Type: FK CONSTRAINT; Schema: i7r; Owner: postgres
+-- Name: environments environments_heater_id_fkey; Type: FK CONSTRAINT; Schema: hh; Owner: postgres
 --
 
-ALTER TABLE ONLY i7r.environments
-    ADD CONSTRAINT environments_humidifier_id_fkey FOREIGN KEY (humidifier_id) REFERENCES i7r.devices(id);
-
-
---
--- Name: environments environments_light_id_fkey; Type: FK CONSTRAINT; Schema: i7r; Owner: postgres
---
-
-ALTER TABLE ONLY i7r.environments
-    ADD CONSTRAINT environments_light_id_fkey FOREIGN KEY (light_id) REFERENCES i7r.devices(id);
+ALTER TABLE ONLY hh.environments
+    ADD CONSTRAINT environments_heater_id_fkey FOREIGN KEY (heater_id) REFERENCES hh.devices(id);
 
 
 --
--- Name: readings readings_environment_id_fkey; Type: FK CONSTRAINT; Schema: i7r; Owner: postgres
+-- Name: environments environments_humidifier_id_fkey; Type: FK CONSTRAINT; Schema: hh; Owner: postgres
 --
 
-ALTER TABLE ONLY i7r.readings
-    ADD CONSTRAINT readings_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES i7r.environments(id);
-
-
---
--- Name: readings readings_fan_id_fkey; Type: FK CONSTRAINT; Schema: i7r; Owner: postgres
---
-
-ALTER TABLE ONLY i7r.readings
-    ADD CONSTRAINT readings_fan_id_fkey FOREIGN KEY (fan_id) REFERENCES i7r.devices(id);
+ALTER TABLE ONLY hh.environments
+    ADD CONSTRAINT environments_humidifier_id_fkey FOREIGN KEY (humidifier_id) REFERENCES hh.devices(id);
 
 
 --
--- Name: readings readings_heater_id_fkey; Type: FK CONSTRAINT; Schema: i7r; Owner: postgres
+-- Name: environments environments_light_id_fkey; Type: FK CONSTRAINT; Schema: hh; Owner: postgres
 --
 
-ALTER TABLE ONLY i7r.readings
-    ADD CONSTRAINT readings_heater_id_fkey FOREIGN KEY (heater_id) REFERENCES i7r.devices(id);
-
-
---
--- Name: readings readings_humidifier_id_fkey; Type: FK CONSTRAINT; Schema: i7r; Owner: postgres
---
-
-ALTER TABLE ONLY i7r.readings
-    ADD CONSTRAINT readings_humidifier_id_fkey FOREIGN KEY (humidifier_id) REFERENCES i7r.devices(id);
+ALTER TABLE ONLY hh.environments
+    ADD CONSTRAINT environments_light_id_fkey FOREIGN KEY (light_id) REFERENCES hh.devices(id);
 
 
 --
--- Name: readings readings_light_id_fkey; Type: FK CONSTRAINT; Schema: i7r; Owner: postgres
+-- Name: readings readings_environment_id_fkey; Type: FK CONSTRAINT; Schema: hh; Owner: postgres
 --
 
-ALTER TABLE ONLY i7r.readings
-    ADD CONSTRAINT readings_light_id_fkey FOREIGN KEY (light_id) REFERENCES i7r.devices(id);
+ALTER TABLE ONLY hh.readings
+    ADD CONSTRAINT readings_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES hh.environments(id);
 
 
 --
--- Name: schedules schedules_environment_id_fkey; Type: FK CONSTRAINT; Schema: i7r; Owner: postgres
+-- Name: readings readings_fan_id_fkey; Type: FK CONSTRAINT; Schema: hh; Owner: postgres
 --
 
-ALTER TABLE ONLY i7r.schedules
-    ADD CONSTRAINT schedules_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES i7r.environments(id);
+ALTER TABLE ONLY hh.readings
+    ADD CONSTRAINT readings_fan_id_fkey FOREIGN KEY (fan_id) REFERENCES hh.devices(id);
+
+
+--
+-- Name: readings readings_heater_id_fkey; Type: FK CONSTRAINT; Schema: hh; Owner: postgres
+--
+
+ALTER TABLE ONLY hh.readings
+    ADD CONSTRAINT readings_heater_id_fkey FOREIGN KEY (heater_id) REFERENCES hh.devices(id);
+
+
+--
+-- Name: readings readings_humidifier_id_fkey; Type: FK CONSTRAINT; Schema: hh; Owner: postgres
+--
+
+ALTER TABLE ONLY hh.readings
+    ADD CONSTRAINT readings_humidifier_id_fkey FOREIGN KEY (humidifier_id) REFERENCES hh.devices(id);
+
+
+--
+-- Name: readings readings_light_id_fkey; Type: FK CONSTRAINT; Schema: hh; Owner: postgres
+--
+
+ALTER TABLE ONLY hh.readings
+    ADD CONSTRAINT readings_light_id_fkey FOREIGN KEY (light_id) REFERENCES hh.devices(id);
+
+
+--
+-- Name: schedules schedules_environment_id_fkey; Type: FK CONSTRAINT; Schema: hh; Owner: postgres
+--
+
+ALTER TABLE ONLY hh.schedules
+    ADD CONSTRAINT schedules_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES hh.environments(id);
 
 
 --
