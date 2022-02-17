@@ -4,11 +4,9 @@ from datetime import datetime, date, time
 import os
 from uuid import uuid4
 from sqlalchemy import select
-from postgres_connector import CONFIG, get_session, get_engine
 from scripts.import_db_schema import import_schema
 from hothouse import Device, Environment, Schedule
-
-
+from hothouse.postgres import CONFIG, get_engine, get_session
 test_db_name = 'hothouse_test_db'
 
 
