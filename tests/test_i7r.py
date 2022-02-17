@@ -1,10 +1,12 @@
 import unittest
+from unittest.mock import Mock
+from datetime import datetime, date, time
 import os
 from uuid import uuid4
 from sqlalchemy import select
 from postgres_connector import CONFIG, get_session, get_engine
 from scripts.import_db_schema import import_schema
-from i7r import Device, Environment
+from i7r import Device, Environment, Schedule
 
 
 test_db_name = 'i7r_test_db'
@@ -14,6 +16,7 @@ class TestI7R(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         try:
+            print('Setting up...')
             # Create a transient test database to use during unit tests
             os.environ['PGPASSWORD'] = CONFIG['PG_PASSWORD']
             os.system(
@@ -57,6 +60,19 @@ class TestI7R(unittest.TestCase):
                 )
                 session.add(environment)
 
+                schedule = Schedule(
+                    id=str(uuid4()),
+                    environment_id=environment.id,
+                    temp=70,
+                    humidity=0.5,
+                    fan_on_seconds=60,
+                    fan_off_seconds=3540,
+                    start_date=date.today(),
+                    light_on_at=time(hour=8),
+                    light_off_at=time(hour=20)
+                )
+                session.add(schedule)
+
                 session.commit()
 
         except Exception as e:
@@ -84,4 +100,73 @@ class TestI7R(unittest.TestCase):
             environment: Environment = session.execute(
                 environment_query).scalars().first()
 
-            environment.take_reading()
+        # Mock up some return values for temp and humidity
+        Environment.get_temp = Mock(return_value=70)
+        Environment.get_humidity = Mock(return_value=0.5)
+
+        # Take a reading at 8:00am today
+        environment.take_reading(
+            at=datetime.now().replace(hour=8, minute=0, second=0))
+
+        with get_session(test_db_name) as session:
+            heater: Device = session.get(Device, environment.heater_id)
+            humidifier: Device = session.get(Device, environment.heater_id)
+            fan: Device = session.get(Device, environment.fan_id)
+            light: Device = session.get(Device, environment.light_id)
+
+            # Comfortable conditions, no heat/humidity needed
+            self.assertFalse(heater.active)
+            self.assertFalse(humidifier.active)
+
+            # Light should turn on at 8am
+            self.assertTrue(light.active)
+            # Fan should be on for the first 60 seconds of the hour
+            self.assertTrue(fan.active)
+
+        # Take a reading at 8:01am today, fan should have turned off after 60 seconds
+        environment.take_reading(at=datetime.now().replace(hour=8, minute=1))
+        with get_session(test_db_name) as session:
+            fan: Device = session.get(Device, environment.fan_id)
+            self.assertFalse(fan.active)
+
+        # Take a reading at 9:00am today, fan should come back on for the first 60 seconds of the hour
+        environment.take_reading(
+            at=datetime.now().replace(hour=9, minute=0))
+        with get_session(test_db_name) as session:
+            fan: Device = session.get(Device, environment.fan_id)
+            self.assertTrue(fan.active)
+
+        # Take a reading at 11:00pm, make sure the light turned itself off
+        environment.take_reading(
+            at=datetime.now().replace(hour=23, minute=0))
+        with get_session(test_db_name) as session:
+            light: Device = session.get(Device, environment.light_id)
+            self.assertFalse(light.active)
+
+        # Drop the temp below the allowable threshold, make sure the heat comes on
+        Environment.get_temp = Mock(return_value=65)
+        environment.take_reading()
+        with get_session(test_db_name) as session:
+            heater: Device = session.get(Device, environment.heater_id)
+            self.assertTrue(heater.active)
+
+        # Increase the temp over the allowable threshold, make sure the heat turns off
+        Environment.get_temp = Mock(return_value=75)
+        environment.take_reading()
+        with get_session(test_db_name) as session:
+            heater: Device = session.get(Device, environment.heater_id)
+            self.assertFalse(heater.active)
+
+        # Drop the humidity too low and make sure humidifier comes on
+        Environment.get_humidity = Mock(return_value=0.3)
+        environment.take_reading()
+        with get_session(test_db_name) as session:
+            humidifier: Device = session.get(Device, environment.humidifier_id)
+            self.assertTrue(humidifier.active)
+
+        # Increase the humidity and make sure humidifier turns off
+        Environment.get_humidity = Mock(return_value=0.7)
+        environment.take_reading()
+        with get_session(test_db_name) as session:
+            humidifier: Device = session.get(Device, environment.humidifier_id)
+            self.assertFalse(humidifier.active)

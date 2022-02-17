@@ -97,13 +97,13 @@ class Environment(Base):
     def get_humidity(self) -> float:
         """Get the current humidity in this environment."""
 
-    def take_reading(self) -> None:
+    def take_reading(self, at: datetime = None) -> None:
         """
         - Record the current environment conditions to the database.
         - Dispatch any events to controllers whose status should change
           based on the schedule and conditions.
         """
-        now = datetime.now()
+        now = at or datetime.now()
         humidity = self.get_humidity()
         temp = self.get_temp()
 

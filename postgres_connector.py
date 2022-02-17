@@ -48,7 +48,7 @@ def get_engine(db_name: str) -> Engine:
     if engine is None:
         engine = create_engine(
             f"postgresql+pg8000://{USER}:{PASSWORD}@{HOST}:{PORT}/{db_name}",
-            echo=True)
+            echo=False)
 
     return engine
 
