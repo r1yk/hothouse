@@ -5,7 +5,7 @@ config = dotenv_values()
 
 export_schema_command = \
     f"pg_dump -d {config.get('DB_NAME')} -U {config.get('PG_USERNAME')} " \
-    f"--schema-only > db_schema_export.sql"
+    f"--schema-only > db_schema_export.psql"
 print(export_schema_command)
 
 os.system(export_schema_command)
