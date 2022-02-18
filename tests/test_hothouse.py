@@ -4,7 +4,7 @@ from datetime import datetime, date, time
 import os
 from uuid import uuid4
 from sqlalchemy import select
-from scripts.import_db_schema import import_schema
+from hothouse.import_db_schema import import_schema
 from hothouse import Schedule, Device
 from mocks.mock_hothouse import MockEnvironment, MockLight, MockFan, MockHeater, MockHumidifier
 from hothouse.postgres import CONFIG, get_engine, get_session
