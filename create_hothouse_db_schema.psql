@@ -44,6 +44,23 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
+-- Name: device_usages; Type: TABLE; Schema: hh; Owner: postgres
+--
+
+CREATE TABLE hh.device_usages (
+    id character(36) NOT NULL,
+    device_id character(36) NOT NULL,
+    environment_id character(36) NOT NULL,
+    start_at timestamp without time zone NOT NULL,
+    end_at timestamp without time zone NOT NULL,
+    seconds integer NOT NULL,
+    kilowatt_hours numeric NOT NULL
+);
+
+
+ALTER TABLE hh.device_usages OWNER TO postgres;
+
+--
 -- Name: devices; Type: TABLE; Schema: hh; Owner: postgres
 --
 
@@ -53,7 +70,8 @@ CREATE TABLE hh.devices (
     watts integer,
     id character(36) NOT NULL,
     name character varying(80) NOT NULL,
-    device_type character varying(36)
+    device_type character varying(36),
+    last_activated_at timestamp without time zone
 );
 
 
@@ -124,6 +142,14 @@ CREATE TABLE hh.schedules (
 ALTER TABLE hh.schedules OWNER TO postgres;
 
 --
+-- Name: device_usages device_usages_pkey; Type: CONSTRAINT; Schema: hh; Owner: postgres
+--
+
+ALTER TABLE ONLY hh.device_usages
+    ADD CONSTRAINT device_usages_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: devices devices_pkey; Type: CONSTRAINT; Schema: hh; Owner: postgres
 --
 
@@ -153,6 +179,22 @@ ALTER TABLE ONLY hh.readings
 
 ALTER TABLE ONLY hh.schedules
     ADD CONSTRAINT schedules_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: device_usages device_usages_device_id_fkey; Type: FK CONSTRAINT; Schema: hh; Owner: postgres
+--
+
+ALTER TABLE ONLY hh.device_usages
+    ADD CONSTRAINT device_usages_device_id_fkey FOREIGN KEY (device_id) REFERENCES hh.devices(id) ON DELETE CASCADE;
+
+
+--
+-- Name: device_usages device_usages_environment_id_fkey; Type: FK CONSTRAINT; Schema: hh; Owner: postgres
+--
+
+ALTER TABLE ONLY hh.device_usages
+    ADD CONSTRAINT device_usages_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES hh.environments(id) ON DELETE CASCADE;
 
 
 --

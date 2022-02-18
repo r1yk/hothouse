@@ -2,3 +2,4 @@ env
 .env
 keys
 __pycache__
+dev

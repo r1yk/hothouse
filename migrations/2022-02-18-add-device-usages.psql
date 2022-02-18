@@ -1,0 +1,16 @@
+BEGIN;
+
+    ALTER TABLE hh.devices
+        ADD COLUMN last_activated_at timestamp;
+    
+    CREATE TABLE hh.device_usages (
+        id char(36) PRIMARY KEY,
+        device_id char(36) NOT NULL REFERENCES hh.devices ON DELETE CASCADE,
+        environment_id char(36) NOT NULL REFERENCES hh.environments ON DELETE CASCADE,
+        start_at timestamp NOT NULL,
+        end_at timestamp NOT NULL,
+        seconds int NOT NULL,
+        kilowatt_hours NUMERIC NOT NULL
+    );
+
+COMMIT;

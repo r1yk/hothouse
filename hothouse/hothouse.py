@@ -56,12 +56,39 @@ class Device(Base):
     active = Column(Boolean)
     voltage = Column(Numeric)
     watts = Column(Numeric)
+    last_activated_at = Column(DateTime)
 
     def on(self, level: float = 1) -> None:
         """Send a signal for the device to engage."""
+        self.active = True
+        self.last_activated_at = datetime.now()
+        self._on(level)
+
+    def _on(self) -> None:
+        pass
 
     def off(self) -> None:
         """Send a signal for the device to disengage."""
+        self.active = False
+        self._off()
+        self._record_usage()
+
+    def _off(self) -> None:
+        pass
+
+    def _record_usage() -> None:
+        pass
+
+
+class DeviceUsages(Base):
+    __tablename__ = 'device_usages'
+    id = Column(String, primary_key=True)
+    device_id = Column(ForeignKey('hh.devices.id'))
+    environment_id = Column(ForeignKey('hh.environments.id'))
+    start_at = Column(DateTime)
+    end_at = Column(DateTime)
+    seconds = Column(Integer)
+    kilowatt_hours = Column(Numeric)
 
 
 class Environment(Base):
