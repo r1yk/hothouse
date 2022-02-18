@@ -1,5 +1,6 @@
 """Hothouse Table implementations"""
 from datetime import datetime
+from time import sleep
 from uuid import uuid4
 from sqlalchemy import Boolean, Column, Date, DateTime, Integer, Numeric, String, ForeignKey, Time, or_, select
 from sqlalchemy.orm import declarative_base, Session
@@ -138,6 +139,12 @@ class Environment(Base):
 
     def get_humidity(self) -> float:
         """Get the current humidity in this environment."""
+
+    def monitor(self, interval: int = 60):
+        """Take a new reading of the environment conditions every `interval` seconds."""
+        while True:
+            self.take_reading()
+            sleep(interval)
 
     def take_reading(self, at: datetime = None) -> None:
         """
