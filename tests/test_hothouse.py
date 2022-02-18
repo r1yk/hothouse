@@ -5,7 +5,8 @@ import os
 from uuid import uuid4
 from sqlalchemy import select
 from scripts.import_db_schema import import_schema
-from hothouse import Device, Environment, Schedule
+from hothouse import Schedule, Device
+from mocks.mock_hothouse import MockEnvironment, MockLight, MockFan, MockHeater, MockHumidifier
 from hothouse.postgres import CONFIG, get_engine, get_session
 test_db_name = 'hothouse_test_db'
 
@@ -23,32 +24,32 @@ class TestHothouse(unittest.TestCase):
 
             # Seed the new database with some test data
             with get_session(test_db_name) as session:
-                light = Device(
+                light = MockLight(
                     id=str(uuid4()),
                     name='Test Light',
                     watts=30
                 )
 
-                fan = Device(
+                fan = MockFan(
                     id=str(uuid4()),
                     name='Test Fan',
                     watts=20
                 )
 
-                heater = Device(
+                heater = MockHeater(
                     id=str(uuid4()),
                     name='Test Heater',
                     watts=300
                 )
 
-                humidifier = Device(
+                humidifier = MockHumidifier(
                     id=str(uuid4()),
                     name='Test Humidifier',
                     watts=100
                 )
                 session.add_all([light, fan, heater, humidifier])
 
-                environment = Environment(
+                environment = MockEnvironment(
                     id=str(uuid4()),
                     name='Test Environment',
                     light_id=light.id,
@@ -94,13 +95,13 @@ class TestHothouse(unittest.TestCase):
 
     def test_take_reading(self):
         with get_session(test_db_name) as session:
-            environment_query = select(Environment).limit(1)
-            environment: Environment = session.execute(
+            environment_query = select(MockEnvironment).limit(1)
+            environment: MockEnvironment = session.execute(
                 environment_query).scalars().first()
 
         # Mock up some return values for temp and humidity
-        Environment.get_temp = Mock(return_value=70)
-        Environment.get_humidity = Mock(return_value=0.5)
+        MockEnvironment.get_temp = Mock(return_value=70)
+        MockEnvironment.get_humidity = Mock(return_value=0.5)
 
         # Take a reading at 8:00am today
         environment.take_reading(
@@ -142,28 +143,28 @@ class TestHothouse(unittest.TestCase):
             self.assertFalse(light.active)
 
         # Drop the temp below the allowable threshold, make sure the heat comes on
-        Environment.get_temp = Mock(return_value=65)
+        MockEnvironment.get_temp = Mock(return_value=65)
         environment.take_reading()
         with get_session(test_db_name) as session:
             heater: Device = session.get(Device, environment.heater_id)
             self.assertTrue(heater.active)
 
         # Increase the temp over the allowable threshold, make sure the heat turns off
-        Environment.get_temp = Mock(return_value=75)
+        MockEnvironment.get_temp = Mock(return_value=75)
         environment.take_reading()
         with get_session(test_db_name) as session:
             heater: Device = session.get(Device, environment.heater_id)
             self.assertFalse(heater.active)
 
         # Drop the humidity too low and make sure humidifier comes on
-        Environment.get_humidity = Mock(return_value=0.3)
+        MockEnvironment.get_humidity = Mock(return_value=0.3)
         environment.take_reading()
         with get_session(test_db_name) as session:
             humidifier: Device = session.get(Device, environment.humidifier_id)
             self.assertTrue(humidifier.active)
 
         # Increase the humidity and make sure humidifier turns off
-        Environment.get_humidity = Mock(return_value=0.7)
+        MockEnvironment.get_humidity = Mock(return_value=0.7)
         environment.take_reading()
         with get_session(test_db_name) as session:
             humidifier: Device = session.get(Device, environment.humidifier_id)

@@ -58,29 +58,44 @@ class Device(Base):
     watts = Column(Numeric)
     last_activated_at = Column(DateTime)
 
-    def on(self, level: float = 1) -> None:
-        """Send a signal for the device to engage."""
+    def on(self, level: float = 1, at: datetime = None) -> None:
         self.active = True
-        self.last_activated_at = datetime.now()
+        self.last_activated_at = at or datetime.now()
         self._on(level)
 
-    def _on(self) -> None:
-        pass
+    def _on(self, level) -> None:
+        """Send a signal for the device to engage. Override this in custom Device classes!"""
+        raise NotImplementedError
 
-    def off(self) -> None:
-        """Send a signal for the device to disengage."""
+    def off(self, environment_id: str, at: datetime = None) -> None:
         self.active = False
         self._off()
-        self._record_usage()
+        self._get_device_usage(environment_id, at=at or datetime.now())
 
     def _off(self) -> None:
-        pass
+        """Send a signal for the device to disengage. Override this in custom Device classes!"""
+        raise NotImplementedError
 
-    def _record_usage() -> None:
-        pass
+    def _get_device_usage(self, environment_id: str, at: datetime) -> None:
+        start_at = self.last_activated_at
+        end_at = at
+        seconds = round(end_at.timestamp() - start_at.timestamp())
+        kWh = (self.watts / 1000) * (seconds / 3600)
+
+        with get_session() as session:
+            session.add(DeviceUsage(
+                id=str(uuid4()),
+                device_id=self.id,
+                environment_id=environment_id,
+                start_at=start_at,
+                end_at=end_at,
+                seconds=seconds,
+                kilowatt_hours=kWh)
+            )
+            session.commit()
 
 
-class DeviceUsages(Base):
+class DeviceUsage(Base):
     __tablename__ = 'device_usages'
     id = Column(String, primary_key=True)
     device_id = Column(ForeignKey('hh.devices.id'))
@@ -159,12 +174,12 @@ class Environment(Base):
                     # Check if the current temperature below the allowable tolerance
                     if not heater.active and (temp_target - temp_tolerance > temp):
                         heater.active = True
-                        heater.on()
+                        heater.on(at=now)
 
                     # Check if the current temperature above the allowable tolerance
                     elif heater.active and (temp - temp_tolerance > temp_target):
                         heater.active = False
-                        heater.off()
+                        heater.off(self.id, at=now)
 
                 # Humidity control
                 if humidifier is not None:
@@ -175,12 +190,12 @@ class Environment(Base):
                     # Check if the current humidity below the allowable tolerance
                     if not humidifier.active and (humidity_target - humidity_tolerance > humidity):
                         humidifier.active = True
-                        humidifier.on()
+                        humidifier.on(at=now)
 
                     # Check if the current humidity above the allowable tolerance
                     elif humidifier.active and (humidity - humidity_tolerance > humidity_target):
                         humidifier.active = False
-                        humidifier.off()
+                        humidifier.off(self.id, at=now)
 
                 # Fan control
                 if fan is not None:
@@ -193,11 +208,11 @@ class Environment(Base):
                         during_fan_on = this_second % fan_total_period < schedule.fan_on_seconds
                         if not fan.active and during_fan_on:
                             fan.active = True
-                            fan.on()
+                            fan.on(at=now)
 
                         elif fan.active and not during_fan_on:
                             fan.active = False
-                            fan.off()
+                            fan.off(self.id, at=now)
 
                 # Light control
                 if light is not None and schedule.light_on_at and schedule.light_off_at:
@@ -205,11 +220,11 @@ class Environment(Base):
                     during_light_on = now_time > schedule.light_on_at and now_time < schedule.light_off_at
                     if not light.active and during_light_on:
                         light.active = True
-                        light.on()
+                        light.on(at=now)
 
                     elif light.active and not during_light_on:
                         light.active = False
-                        light.off()
+                        light.off(self.id, at=now)
 
                 reading = Reading(
                     id=str(uuid4()),

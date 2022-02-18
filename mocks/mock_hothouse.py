@@ -2,52 +2,55 @@
 
 from datetime import datetime
 import math
-from hothouse import Environment, Fan, Heater, Humidifier, Light
+from hothouse import Environment, Device
 
 
-class MockFan(Fan):
+class MockFan(Device):
     """Mock fan"""
 
-    def fan_on(self, level=1):
+    def _on(self, level):
         print(f'Setting fan to {level}')
 
-    def fan_off(self) -> None:
+    def _off(self) -> None:
         print('fan off')
 
 
-class MockHeater(Heater):
+class MockHeater(Device):
     """Mock heater"""
 
-    def heat_on(self, level=1):
+    def _on(self, level):
         print(f'Setting heat to {level}')
 
-    def heat_off(self) -> None:
+    def _off(self) -> None:
         print('Heat off')
 
 
-class MockHumidifier(Humidifier):
+class MockHumidifier(Device):
     """Mock humidifier"""
 
-    def humidity_on(self, level=1):
+    def _on(self, level):
         print(f'Setting humidifier to {level}')
 
-    def humidity_off(self) -> None:
+    def _off(self) -> None:
         print('Humidifier off')
 
 
-class MockLight(Light):
+class MockLight(Device):
     """Mock light"""
 
-    def light_on(self, level=1):
+    def _on(self, level):
         print(f'Setting light to {level}')
 
-    def light_off(self) -> None:
+    def _off(self) -> None:
         print('Light off')
 
 
 class MockEnvironment(Environment):
     """Mock environment"""
     fan_class = MockFan
+    light_class = MockLight
+    heater_class = MockHeater
+    humidifier_class = MockHumidifier
 
     def get_humidity(self) -> float:
         """Mock humidity varies from 0-100% on a sine wave over the course of 12 minutes"""
