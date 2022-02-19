@@ -173,7 +173,7 @@ class Environment(Base):
                 light: Device = session.get(self.light_class, self.light_id)
 
                 # Temp control
-                if heater is not None:
+                if temp is not None and heater is not None:
                     temp_target = float(
                         schedule.temp or self.temp_default or 70)
                     temp_tolerance = float(self.temp_tolerance or 3)
@@ -189,7 +189,7 @@ class Environment(Base):
                         heater.off(self.id, at=now)
 
                 # Humidity control
-                if humidifier is not None:
+                if humidity is not None and humidifier is not None:
                     humidity_target = float(
                         schedule.humidity or self.humidity_default or 0.5)
                     humidity_tolerance = float(self.humidity_tolerance or 0.1)
@@ -205,21 +205,20 @@ class Environment(Base):
                         humidifier.off(self.id, at=now)
 
                 # Fan control
-                if fan is not None:
-                    if schedule.fan_on_seconds and schedule.fan_off_seconds:
-                        this_second = (now.hour * 60 * 60) + \
-                            (now.minute * 60) + now.second
-                        fan_total_period = schedule.fan_on_seconds + schedule.fan_off_seconds
+                if fan is not None and schedule.fan_on_seconds and schedule.fan_off_seconds:
+                    this_second = (now.hour * 60 * 60) + \
+                        (now.minute * 60) + now.second
+                    fan_total_period = schedule.fan_on_seconds + schedule.fan_off_seconds
 
-                        # Check if the current second falls within the period when the fan should be on
-                        during_fan_on = this_second % fan_total_period < schedule.fan_on_seconds
-                        if not fan.active and during_fan_on:
-                            fan.active = True
-                            fan.on(at=now)
+                    # Check if the current second falls within the period when the fan should be on
+                    during_fan_on = this_second % fan_total_period < schedule.fan_on_seconds
+                    if not fan.active and during_fan_on:
+                        fan.active = True
+                        fan.on(at=now)
 
-                        elif fan.active and not during_fan_on:
-                            fan.active = False
-                            fan.off(self.id, at=now)
+                    elif fan.active and not during_fan_on:
+                        fan.active = False
+                        fan.off(self.id, at=now)
 
                 # Light control
                 if light is not None and schedule.light_on_at and schedule.light_off_at:

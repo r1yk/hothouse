@@ -36,3 +36,60 @@ If you fork `hothouse` and want to run the test suite locally, use the `unittest
 ```sh
 python3 -m unittest discover tests
 ```
+
+## Implementing your own devices
+The key to setting up your own custom environment is writing Python classes that inherit from `hothouse.Device` and `hothouse.Environment`. Here is a simple example that imagines a setup where a light is turned on with a Raspberry Pi by setting a GPIO pin to HIGH:
+
+```python
+from datetime import date, time
+from hothouse import Device, Environment, Schedule
+from hothouse.postgres import get_session
+import RPi.GPIO as GPIO
+
+
+class MyCustomLightFixture(Device):
+    # A custom Device needs to implement the `Device._on` and `Device._off` methods.
+    gpio_pin_number = 18
+
+    def _on(self):
+        GPIO.set(self.gpio_pin_number, GPIO.HIGH)
+
+    def _off(self):
+        GPIO.set(self.gpio_pin_number, GPIO.LOW)
+
+
+class MyCustomEnvironment(Environment):
+    # The environment needs to know which class to implement when handling lighting events
+    light_class = MyCustomLightFixture
+
+
+# Create an instance of the custom light class
+my_light = MyCustomLightFixture(
+    id='my-custom-light-id',
+    name='My Custom Light',
+    watts=100
+)
+# Create an instance of the custom environment class
+my_environment = MyCustomEnvironment(
+    id='my-custom-environment-id',
+    name='My Custom Environment',
+    light_id=my_light.id
+)
+# Create a schedule to enforce the desired conditions in the environment
+my_schedule = Schedule(
+    environment_id=my_environment.id,
+    start_at=date.today(),
+    light_on_at=time(hour=8),
+    light_off_at=time(hour=20)
+)
+
+# Create a database session, and commit these records to the database!
+with get_session() as session:
+    session.add_all(
+        [my_light, my_environment, my_schedule]
+    )
+    session.commit()
+
+# Check in on the new environment every 60 seconds, and let `hothouse` take care of the automations
+my_environment.monitor(interval=60)
+```
