@@ -7,9 +7,11 @@ os.environ['PGPASSWORD'] = config.get('PG_PASSWORD')
 
 
 def import_schema(db_name: str):
+    this_directory = os.path.dirname(os.path.realpath(__file__))
+    import_file = f"{this_directory}/create_hothouse_db_schema.psql"
     import_schema_command = \
         f"psql -U {config.get('PG_USERNAME')} -d {db_name} " \
-        "-c \"\i create_hothouse_db_schema.psql\""
+        f"-c \"\i {import_file}\""
     print(import_schema_command)
 
     os.system(import_schema_command)
